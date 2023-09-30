@@ -1,0 +1,15 @@
+import pandas as pd
+
+dataframe = pd.read_csv("your path")
+dataframe.info()
+
+##########Removing the name & location & Date & Image_Links attribute from the database##########
+
+dataframe.drop(columns = ["name","location","Date","Image_Links"], inplace = True)
+dataframe.info()
+
+##########Remove empty values in the Rating column##########
+
+eval_df = dataframe[dataframe["Rating"].isna()]
+dataframe.dropna(inplace = True)
+dataframe.info()
