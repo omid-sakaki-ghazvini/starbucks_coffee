@@ -1,0 +1,83 @@
+#######Tokeniz#######
+
+from keras.preprocessing.text import Tokenizer
+from keras.preprocessing.sequence import pad_sequences
+
+tokenizer = Tokenizer()
+tokenizer.fit_on_texts(X_train)
+
+X_train_seq = tokenizer.texts_to_sequences(X_train)
+X_val_seq = tokenizer.texts_to_sequences(X_test)
+
+
+X_train_padded = pad_sequences(X_train_seq, maxlen=100, padding='post')
+X_val_padded = pad_sequences(X_val_seq, maxlen=100, padding='post')
+
+ ########Multi channel model########
+
+import tensorflow as tf
+from keras import regularizers
+
+def define_model(length, vocab_size):
+	# channel 1
+	inputs1 = tf.keras.layers.Input(shape=(length,))
+	embedding1 = tf.keras.layers.Embedding(input_dim=vocab_size, output_dim=8, input_length=100, embeddings_regularizer=regularizers.l2(0.0005))(inputs1)
+	lstm1 = tf.keras.layers.LSTM(units=32, return_sequences=True)(embedding1)
+	drop1 = tf.keras.layers.Dropout(0.25)(lstm1)
+	pool1 = tf.keras.layers.MaxPooling1D(pool_size=4)(drop1)
+	flat1 = tf.keras.layers.Flatten()(pool1)
+	# channel 2
+	inputs2 = tf.keras.layers.Input(shape=(length,))
+	embedding2 = tf.keras.layers.Embedding(input_dim=vocab_size, output_dim=16, input_length=100, embeddings_regularizer=regularizers.l2(0.0005))(inputs2)
+	lstm2 = tf.keras.layers.LSTM(units=64, return_sequences=True)(embedding2)
+	drop2 = tf.keras.layers.Dropout(0.25)(lstm2)
+	pool2 = tf.keras.layers.MaxPooling1D(pool_size=2)(drop2)
+	flat2 = tf.keras.layers.Flatten()(pool2)
+	# channel 3
+	inputs3 = tf.keras.layers.Input(shape=(length,))
+	embedding3 = tf.keras.layers.Embedding(input_dim=vocab_size, output_dim=32, input_length=100, embeddings_regularizer=regularizers.l2(0.0005))(inputs3)
+	lstm3 = tf.keras.layers.LSTM(units=128, return_sequences=True)(embedding3)
+	drop3 = tf.keras.layers.Dropout(0.25)(lstm3)
+	pool3 = tf.keras.layers.MaxPooling1D(pool_size=1)(drop3)
+	flat3 = tf.keras.layers.Flatten()(pool3)
+	# merge
+	merged = tf.keras.layers.concatenate([flat1, flat2, flat3])
+	# interpretation
+	dense1 = tf.keras.layers.Dense(50, activation='relu')(merged)
+	outputs = tf.keras.layers.Dense(1, activation='sigmoid')(dense1)
+	model = tf.keras.models.Model(inputs=[inputs1, inputs2, inputs3], outputs=outputs)
+	# compile
+	model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+	# summarize
+	print(model.summary())
+	return model
+
+max_length = 100
+vocab_size = len(tokenizer.word_index) + 1
+print('Vocabulary size: %d' % vocab_size)
+# define model
+model = define_model(max_length, vocab_size)
+
+#########Train Model#########
+    
+from keras import callbacks
+from keras.callbacks import EarlyStopping
+    
+callbake = EarlyStopping(monitor = 'val_loss', patience = 5)
+    
+history = model.fit([X_train_padded,X_train_padded,X_train_padded], y_train,
+                    validation_data=([X_val_padded,X_val_padded,X_val_padded], y_test),epochs=10, callbacks = callbake)
+
+evaluation_results = model.evaluate([X_val_padded,X_val_padded,X_val_padded],y_test)
+print("Test Loss:", evaluation_results[0])
+print("Test Accuracy:", evaluation_results[1])
+
+##########PLT#########
+
+plt.plot(history.history['accuracy'], label='Training Accuracy')
+plt.plot(history.history['val_accuracy'], label='Validation Accuracy')
+plt.xlabel('Epoch')
+plt.ylabel('Accuracy')
+plt.title('Training and Validation Accuracy')
+plt.legend()
+plt.show()
