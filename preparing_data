@@ -1,0 +1,32 @@
+def norm(x):
+    if x == "Postive":
+        return 1
+    return 0
+
+dataframe["Rating"] = dataframe["Rating"].apply(norm)
+dataframe.head()
+
+###########Remove stop words##########
+
+import re, string
+
+def wordopt(text):
+    text = text.lower()
+    text = re.sub('\[.*?\]', '', text)
+    text = re.sub("\\W"," ",text)
+    text = re.sub('https?://\S+|www\.\S+', '', text)
+    text = re.sub('<.*?>+', '', text)
+    text = re.sub('[%s]' % re.escape(string.punctuation), '', text)
+    text = re.sub('\n', '', text)
+    text = re.sub('\w*\d\w*', '', text)
+    return text
+
+dataframe["Review"] = dataframe["Review"].apply(wordopt)
+
+############Splitting Data############
+
+data = dataframe["Review"]
+label = dataframe["Rating"]
+
+from sklearn.model_selection import train_test_split
+X_train, X_test, y_train, y_test = train_test_split(data, label, test_size=0.1,random_state=100, shuffle=True)
