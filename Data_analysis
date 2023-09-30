@@ -1,0 +1,30 @@
+def pos_neg(x):
+    if x > 3:
+        return "Postive"
+    return "Negative"
+
+dataframe["Rating"] = dataframe["Rating"].apply(pos_neg)
+dataframe.head()
+
+##########Statistical display of data###########
+
+from collections import Counter
+cnt = Counter(dataframe["Rating"])
+cnt = dict(cnt)
+print(cnt)
+
+import matplotlib.pyplot as plt
+
+sizes = list(cnt.values())
+labels = list(cnt.keys())
+colors = ['#3fba36', '#66b3ff','#ffcc99','#ff9999', '#d44444']
+fig1, ax1 = plt.subplots()
+ax1.pie(sizes, labels=labels, colors=colors,
+        autopct='%1.1f%%', startangle=90)
+#draw circle
+centre_circle = plt.Circle((0,0),0.70,fc='white')
+fig = plt.gcf()
+fig.gca().add_artist(centre_circle)
+ax1.axis('equal')
+plt.tight_layout()
+plt.show()
